@@ -1,10 +1,10 @@
-
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const ejs = require('ejs')
-const encrypt = require('mongoose-encryption');
 const mongoose = require('mongoose');
+const md5 =require('md5'); //for hashing passwords
 app.use(bodyParser.urlencoded({
     extended: true
 }));
@@ -15,20 +15,20 @@ mongoose.connect('mongodb://localhost:27017/studyPageDB', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
+
+
 const postSchema = {
     title: String,
     content: String
 }
-const userSchema = {
+const userSchema = new mongoose.Schema ({
     email:String,
     password:String
-};
+});
 const User = new mongoose.model('User',userSchema);
 
 const Post = new mongoose.model('Post',postSchema);
-app.get('/fail',function (req,res) {
-    res.render('fail')
-  });
+
 app.route('/')
 .get(function(req,res){
     res.render('login')
@@ -39,11 +39,15 @@ app.route('/')
             console.log(err);
         }else{
             if(user){
-                if(user.password === req.body.password){
+                if(user.password === md5(req.body.password)){
+                    
                     res.redirect('/index')
+                }else{
+                    res.render('fail')
                 }
             }else{
-                res.redirect('/fail')
+                console.log('wrong');
+                res.render('fail')
             }
         }
      }) 
@@ -56,7 +60,7 @@ app.route('/register')
 .post(function (req,res) {  
     const newUser = new User({
         email:req.body.email,
-        password:req.body.password
+        password:md5(req.body.password)
     })
     newUser.save(function (err) {
         if(err){
@@ -98,7 +102,7 @@ app.post('/delete',function (req,res) {
         console.log(err);
         }else{
         console.log('Successfully deleted');
-        res.redirect('/');
+        res.redirect('/index');
         }
         })
     });
